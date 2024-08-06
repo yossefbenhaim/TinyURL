@@ -1,6 +1,27 @@
 import { Request, Response } from 'express';
+
 import ShortenedUrlModel from '../models/urlModels';
 import shortid from 'shortid';
+
+export const clickOnShortUrl = async (req: Request, res: Response) => {
+    try {
+        const { shortUrl } = req.body;
+
+        const url = await ShortenedUrlModel.findOne({ shortUrl });
+
+        if (!url) {
+            return res.status(404).json({ message: 'URL not found' });
+        }
+
+        url.clicks += 1;
+
+        await url.save();
+
+        res.status(200).json({ message: 'Click tracked', clicks: url.clicks });
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
 
 export const createShortenedUrl = async (req: Request, res: Response) => {
     try {
@@ -10,7 +31,6 @@ export const createShortenedUrl = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Full URL is required' });
         }
 
-        // Generate a unique short URL using shortid
         const shortUrl = shortid.generate();
 
         const newUrl = new ShortenedUrlModel({ fullUrl, shortUrl, clicks: 0 });
@@ -18,18 +38,15 @@ export const createShortenedUrl = async (req: Request, res: Response) => {
 
         res.status(201).json(newUrl);
     } catch (error) {
-        console.error('Error creating shortened URL:', error); // Improved logging
+        console.error('Error creating shortened URL:', error);
         res.status(500).json({ message: 'Internal Server Error', error });
     }
 };
 
-// Function to get all shortened URLs
 export const getAllShortcutUrl = async (req: Request, res: Response) => {
     try {
-        // Fetch all shortened URLs from the database
         const urls = await ShortenedUrlModel.find();
 
-        // Respond with the list of URLs
         res.status(200).json({
             message: 'Fetched all shortened URLs',
             data: urls,

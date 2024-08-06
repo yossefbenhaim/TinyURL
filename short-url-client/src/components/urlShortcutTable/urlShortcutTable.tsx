@@ -1,18 +1,19 @@
-import { useEffect } from "react";
+import { clickOnShortUrl, setShortenedUrlList } from "redux/slice/shortenedUrlList";
 import { useAppSelector } from "redux/store";
 import { useDispatch } from 'react-redux';
+import { useEffect, useMemo } from "react";
+
 import axios from 'axios';
-import { setUrlShortcut } from "redux/slice/shortenedUrlList";
 
 const UrlShortcutTable = () => {
 	const dispatch = useDispatch();
+	const urlShortcutList = useAppSelector((state) => state.shortenedUrlList.ShortenedUrlList);
 
 	useEffect(() => {
 		const fetchData = async () => {
 			try {
 				const response = await axios.get('http://localhost:5000/api/urls/getShortenedUrl');
-				console.log(response.data.data, '==================');
-				dispatch(setUrlShortcut(response.data.data));
+				dispatch(setShortenedUrlList(response.data.data));
 			} catch (error) {
 				if (axios.isAxiosError(error)) {
 					console.error('AxiosError:', error.response?.data || error.message);
@@ -21,12 +22,23 @@ const UrlShortcutTable = () => {
 				}
 			}
 		};
-
 		fetchData();
 	}, []);
 
-	const urlShortcutList = useAppSelector((state) => state.shortenedUrlList.ShortenedUrlList);
-	console.log(urlShortcutList);
+	const handleClick = async (shortUrl: string) => {
+		try {
+			const response = await axios.post(`http://localhost:5000/api/urls/clickOnShortUrl/`, { shortUrl });
+			if (response.status === 200) {
+				dispatch(clickOnShortUrl(shortUrl));
+			}
+		} catch (error) {
+			console.error('Error tracking click:', error);
+		}
+	};
+
+	const topUrlShortcut = useMemo(() => {
+		return [...urlShortcutList].sort((a, b) => b.clicks - a.clicks)
+	}, [urlShortcutList])
 
 	return (
 		<div className="container w-[500px] my-8">
@@ -40,11 +52,19 @@ const UrlShortcutTable = () => {
 				</thead>
 				<tbody>
 					{
-						urlShortcutList.map((url) => (
+						topUrlShortcut.map((url) => (
 							<tr key={url.shortUrl} className="border-t border-gray-200">
-								<td className="py-4 px-6 whitespace-nowrap text-sm text-gray-700">{url.fullUrl}</td>
+								<td className="py-4 px-6 whitespace-nowrap text-sm  text-gray-700">
+									<a href={url.fullUrl} className="hover:underline block w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{url.fullUrl}</a>
+								</td>
 								<td className="py-4 px-6 whitespace-nowrap text-sm text-blue-500">
-									<a href="#" className="hover:underline">{url.shortUrl}</a>
+									<a
+										href={url.fullUrl}
+										className="hover:underline"
+										onClick={() => handleClick(url.shortUrl)}
+									>
+										{url.shortUrl}
+									</a>
 								</td>
 								<td className="py-4 px-6 whitespace-nowrap text-sm text-gray-700">{url.clicks}</td>
 							</tr>

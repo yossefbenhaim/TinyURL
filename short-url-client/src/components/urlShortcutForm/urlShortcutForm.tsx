@@ -1,12 +1,16 @@
-import { Controller, FormProvider, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import UrlShortcutSchema, { UrlShortcutFormKeys, UrlShortcutType } from './urlShortcutSchema';
+import { Controller, FormProvider, useForm } from 'react-hook-form';
+import { addShortenedUrl } from 'redux/slice/shortenedUrlList';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useDispatch } from 'react-redux';
-import { addUrlShortcut } from 'redux/slice/shortenedUrlList';
+import { useState } from 'react';
+
 import axios from 'axios';
 
 const UrlShortcutForm = () => {
 	const dispatch = useDispatch();
+	const [isLoading, setIsLoading] = useState(false);
+	const [successMessage, setSuccessMessage] = useState('');
 
 	const methods = useForm<UrlShortcutType>({
 		defaultValues: {
@@ -18,24 +22,33 @@ const UrlShortcutForm = () => {
 	const { handleSubmit, control, formState: { errors } } = methods;
 
 	const onSubmit = async (data: UrlShortcutType) => {
+		setIsLoading(true);
+		setSuccessMessage('');
 		try {
 			const { fullUrl } = data;
-			const response = await axios.post('http://localhost:5000/api/urls/createShortenedUrl', { fullUrl });
-			console.log(response.data, 'Response from backend');
 
-			const { clicks, shortUrl } = response.data;
+			const response = await axios.post('http://localhost:5000/api/urls/createShortenedUrl/abc123', { fullUrl });
 
-			dispatch(addUrlShortcut({
-				clicks,
-				fullUrl,
-				shortUrl
-			}));
+			if (response.status === 200) {
+				const { clicks, shortUrl } = response.data;
+
+				dispatch(addShortenedUrl({
+					clicks,
+					fullUrl,
+					shortUrl
+				}));
+
+				setSuccessMessage('URL successfully shortened!');
+			}
+
 		} catch (error) {
 			if (axios.isAxiosError(error)) {
 				console.error('AxiosError:', error.response?.data || error.message);
 			} else {
 				console.error('Unexpected Error:', error);
 			}
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
@@ -63,9 +76,16 @@ const UrlShortcutForm = () => {
 						)}
 					/>
 					<div>
-						<button type='submit' className='w-[70px] bg-green-300 hover:bg-green-500 rounded-lg border-black border-[1px]'>Short</button>
+						<button type='submit' className='w-[70px] bg-green-300 hover:bg-green-500 rounded-lg border-black border-[1px]' disabled={isLoading}>
+							{isLoading ? 'Loading...' : 'Short'}
+						</button>
 					</div>
 				</div>
+				{successMessage && (
+					<div className='text-green-500 mt-2'>
+						{successMessage}
+					</div>
+				)}
 			</form>
 		</FormProvider>
 	);

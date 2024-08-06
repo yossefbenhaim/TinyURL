@@ -8,7 +8,7 @@ interface ShortenedUrl {
 
 const shortenedUrlSchema = new Schema<ShortenedUrl>({
     fullUrl: { type: String, required: true },
-    shortUrl: { type: String, required: true },
+    shortUrl: { type: String, required: true, unique: true },
     clicks: { type: Number, default: 0 },
 });
 
