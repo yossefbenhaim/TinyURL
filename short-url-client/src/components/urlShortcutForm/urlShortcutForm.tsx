@@ -27,19 +27,17 @@ const UrlShortcutForm = () => {
 		try {
 			const { fullUrl } = data;
 
-			const response = await axios.post('http://localhost:5000/api/urls/createShortenedUrl/abc123', { fullUrl });
+			const response = await axios.post('http://localhost:5000/api/urls/createShortenedUrl/', { fullUrl });
 
-			if (response.status === 200) {
-				const { clicks, shortUrl } = response.data;
+			const { clicks, shortUrl } = response.data;
 
-				dispatch(addShortenedUrl({
-					clicks,
-					fullUrl,
-					shortUrl
-				}));
+			dispatch(addShortenedUrl({
+				clicks,
+				fullUrl,
+				shortUrl
+			}));
 
-				setSuccessMessage('URL successfully shortened!');
-			}
+			setSuccessMessage('URL successfully shortened!');
 
 		} catch (error) {
 			if (axios.isAxiosError(error)) {
